@@ -4,22 +4,22 @@
             <div class="operate-wrap">
                 <el-form :model="View.queryParams" ref="soList" :rules="rules">
                     <el-row>
-                        <InputWidget :span="5" label="发运单号" prop="soNo" v-model.trim="View.queryParams.soNo"></InputWidget>
-                        <EnumSelectWidget label="类型" prop="soType" enumKey="soType" v-model.trim="View.queryParams.soType"></EnumSelectWidget>
-                        <InputWidget label="线路" prop="routeCode" v-model.trim="View.queryParams.routeCode"></InputWidget>
-                        <MultiSelectWidget :span="6" prop="soStatus" label="状态" enumKey="soStatusV3" v-model.trim="View.queryParams.soStatus"></MultiSelectWidget>
+                        <InputWidget :span="5" label="表单名称" prop="soNo" v-model.trim="View.queryParams.soNo"></InputWidget>
+                        <EnumSelectWidget label="表单名称" prop="soType" enumKey="soType" v-model.trim="View.queryParams.soType"></EnumSelectWidget>
+                        <InputWidget label="表单名称" prop="routeCode" v-model.trim="View.queryParams.routeCode"></InputWidget>
+                        <MultiSelectWidget :span="6" prop="soStatus" label="表单名称" enumKey="soStatusV3" v-model.trim="View.queryParams.soStatus"></MultiSelectWidget>
                         <ArrowWidget :value="View.arrowUp" @change="View.arrowUp = !View.arrowUp"></ArrowWidget>
                     </el-row>
 
                     <el-row>
-                        <InputWidget label="波次号" :span="6" prop="waveCode" v-model.trim="View.queryParams.waveCode"></InputWidget>
-                        <InputWidget label="客户" prop="customerName" v-model.trim="View.queryParams.customerName"></InputWidget>
-                        <InputWidget label="客户名称" prop="customerName" v-model.trim="View.queryParams.customerName"></InputWidget>
-                        <InputWidget label="货主" prop="ownerCode" v-model.trim="View.queryParams.ownerCode"></InputWidget>
+                        <InputWidget label="表单名称" :span="6" prop="waveCode" v-model.trim="View.queryParams.waveCode"></InputWidget>
+                        <InputWidget label="表单名称" prop="customerName" v-model.trim="View.queryParams.customerName"></InputWidget>
+                        <InputWidget label="表单名称" prop="customerName" v-model.trim="View.queryParams.customerName"></InputWidget>
+                        <InputWidget label="表单名称" prop="ownerCode" v-model.trim="View.queryParams.ownerCode"></InputWidget>
                     </el-row>
 
                     <el-row v-show="View.arrowUp">
-                        <DateWidget label="要求发运时间" :labelWidth="100"
+                        <DateWidget label="表单名称" :labelWidth="100"
                                     propFrom="sendTimeStart"
                                     propTo="sendTimeEnd"
                                     :timeFrom="View.queryParams.sendTimeStart"
@@ -28,7 +28,7 @@
                                     @change="emitCallback2"
                         ></DateWidget>
 
-                        <DateWidget label="生单时间" :labelWidth="100"
+                        <DateWidget label="表单名称" :labelWidth="100"
                                     propFrom="createTimeStart"
                                     propTo="createTimeEnd"
                                     :timeFrom="View.queryParams.createTimeStart"
@@ -39,30 +39,30 @@
 
                     <el-row type="flex">
                         <el-col :span="20">
-                            <el-button type="primary" :loading="View.loading1" @click="submitForm('soList')" size="small">查询</el-button>
-                            <el-button type="warning" @click="emptyFilterValue()" size="small">清空</el-button>
-                            <el-button type="primary" v-auth="PERMISSION.CONFIRM_SHIP" :loading="View.loading1" @click="shipBatch()" size="small">确认发运</el-button>
-                            <el-button type="primary" v-auth="PERMISSION.BOX_LABEL_PRINT" :loading="View.loading1" @click="printCheckOrderBatch()" size="small">打印复核单</el-button>
+                            <el-button type="primary" :loading="View.loading1" @click="submitForm('soList')" size="small">操作</el-button>
+                            <el-button type="warning" @click="emptyFilterValue()" size="small">操作</el-button>
+                            <el-button type="primary" v-auth="PERMISSION.CONFIRM_SHIP" :loading="View.loading1" @click="shipBatch()" size="small">操作</el-button>
+                            <el-button type="primary" v-auth="PERMISSION.BOX_LABEL_PRINT" :loading="View.loading1" @click="printCheckOrderBatch()" size="small">操作</el-button>
                         </el-col>
                     </el-row>
                 </el-form>
 
                 <el-table slot="table" :data="View.resultList" stripe border :row-class-name="tableRowClassName" class="adjust-font">
                     <el-table-column label="序号" type="index" width="60"></el-table-column>
-                    <el-table-column label="发运单号" prop="soNo" width="220"></el-table-column>
-                    <el-table-column label="类型" prop="soTypeDesc" min-width="130"></el-table-column>
-                    <el-table-column label="状态" prop="soStatusDesc" min-width="100"></el-table-column>
-                    <el-table-column label="客户" prop="customerCode" min-width="150"></el-table-column>
-                    <el-table-column label="客户名称" prop="customerName" width="100"></el-table-column>
-                    <el-table-column label="波次号" prop="waveCode" min-width="150"></el-table-column>
-                    <el-table-column label="货主" prop="ownerCode" min-width="100"></el-table-column>
-                    <el-table-column label="要求发运时间" prop="sendTime" min-width="140"></el-table-column>
-                    <el-table-column label="线路" prop="routeCode" min-width="100"></el-table-column>
-                    <el-table-column label="线路名称" prop="routeName" min-width="100"></el-table-column>
-                    <el-table-column label="需求数量" prop="planQty" min-width="100"></el-table-column>
-                    <el-table-column label="分配数量" prop="allocateQty" min-width="100"></el-table-column>
-                    <el-table-column label="发运数量" prop="shipQty" min-width="100"></el-table-column>
-                    <el-table-column label="发运差异" prop="diffQty" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="soNo" width="220"></el-table-column>
+                    <el-table-column label="表格名称" prop="soTypeDesc" min-width="130"></el-table-column>
+                    <el-table-column label="表格名称" prop="soStatusDesc" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="customerCode" min-width="150"></el-table-column>
+                    <el-table-column label="表格名称" prop="customerName" width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="waveCode" min-width="150"></el-table-column>
+                    <el-table-column label="表格名称" prop="ownerCode" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="sendTime" min-width="140"></el-table-column>
+                    <el-table-column label="表格名称" prop="routeCode" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="routeName" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="planQty" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="allocateQty" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="shipQty" min-width="100"></el-table-column>
+                    <el-table-column label="表格名称" prop="diffQty" min-width="100"></el-table-column>
                     <el-table-column label="操作" min-width="80px" fixed="right">
                         <template slot-scope="scope">
                             <a type="text" v-auth="PERMISSION.DETAIL" href="javascript:;" @click="showDetail(scope.row.soId)">详情</a>
