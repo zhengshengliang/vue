@@ -1,212 +1,317 @@
 <template>
-      <section>
-                <div id="app" slot="content">
-                              <main class="main-content">
-                                              <el-form :model="View.queryParams" ref="waveSoList" :rules="rules">
-                                                                    <el-row>
-                                                                                              <InputWidget :span="5" label="发运单号" prop="soNo" v-model.trim="View.queryParams.soNo"></InputWidget>
-                                                                                                                      <EnumSelectWidget label="类型" prop="soType" enumKey="soType" v-model.trim="View.queryParams.soType"></EnumSelectWidget>
-                                                                                                                                              <MultiSelectWidget :span="6" prop="soStatus" label="状态" enumKey="soStatusV3" v-model.trim="View.queryParams.soStatus"></MultiSelectWidget>
-                                                                                                                                                                      <InputWidget label="线路" prop="routeCode" v-model.trim="View.queryParams.routeCode"></InputWidget>
-                                                                                                                                                                                              <ArrowWidget :value="View.arrowUp" @change="View.arrowUp = !View.arrowUp"></ArrowWidget>
-                                                                                                                                                                                                                  </el-row>
+    <section>
+        <div id="app" slot="content">
+            <div class="operate-wrap">
+                <el-form :model="View.queryParams" label-width="80px" ref="bomList">
+                    <el-row>
+                        <InputWidget labelWidth="80" label="BOM单号" prop="bomCode" v-model.trim="View.queryParams.bomCode"></InputWidget>
+                        <InputWidget label="商品编码" prop="skuCode" v-model.trim="View.queryParams.skuCode"></InputWidget>
+                        <InputWidget label="商品名称" prop="commodityName" v-model.trim="View.queryParams.commodityName"></InputWidget>
+                        <MultiSelectWidget :span="7" label="状态" prop="statusList" enumKey="bomStatus" v-model.trim="View.queryParams.statusList"></MultiSelectWidget>
+                    </el-row>
+                    <el-row>
+                        <el-col>
+                            <el-button :loading="View.loading" @click="submitForm('bomList')" type="primary" size="small">查询</el-button>
+                            <el-button @click="emptyFilterValue('bomList')" type="warning" size="small">清空</el-button>
+                            <el-button type="primary" @click="jumpEdit(0)" v-auth="PERMISSION.NEW" size="small">新建</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
 
-                                                                                                                                                                                                                                      <el-row v-show="View.arrowUp">
-                                                                                                                                                                                                                                                                <InputWidget label="客户" prop="customerCode" v-model.trim="View.queryParams.customerCode"></InputWidget>
-                                                                                                                                                                                                                                                                                        <InputWidget label="客户名称" prop="customerName" v-model.trim="View.queryParams.customerName"></InputWidget>
-                                                                                                                                                                                                                                                                                                                <InputWidget label="货主" prop="ownerCode" v-model.trim="View.queryParams.ownerCode"></InputWidget>
-                                                                                                                                                                                                                                                                                                                                        <InputWidget label="波次号" prop="waveCode" v-model.trim="View.queryParams.waveCode"></InputWidget>
-                                                                                                                                                                                                                                                                                                                                                            </el-row>
+                <el-table slot="table" :data="View.resultList" stripe border class="adjust-font"
+                          :row-key="getRowKeys"
+                          :expand-row-keys="View.expandRowKeysArr"
+                          @expand-change="showMoreDetail"
+                          @row-click="showMoreDetail">
+                    <el-table-column label=" " type="expand" width="50">
+                        <template slot-scope="props">
+                            <el-table slot="table" :data="props.row.detailList" class="adjust-font">
+                                <el-table-column label="序号" type="index" prop="index"></el-table-column>
+                                <el-table-column label="顺序号" prop="seqNum"></el-table-column>
+                                <el-table-column label="商品编码" prop="skuCode" min-width="100"></el-table-column>
+                                <el-table-column label="商品名称" prop="commodityName" min-width="150"></el-table-column>
+                                <el-table-column label="规格" prop="spec" width="100"></el-table-column>
+                                <el-table-column label="数量" prop="skuQty" min-width="100"></el-table-column>
+                                <el-table-column label="单位" prop="unitName" min-width="100"></el-table-column>
+                                <el-table-column label="备注" prop="remark" min-width="150"></el-table-column>
+                            </el-table>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="序号" type="index" width="60"></el-table-column>
+                    <el-table-column label="BOM单号" width="180">
+                        <template slot-scope="scope">
+                            <div  @click="stopBubble">
+                                <a style="text-decoration: underline" @click="jumpToDetailPage(scope.row.bomCode)">{{ scope.row.bomCode }}</a><br/>
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="商品编码" prop="skuCode" min-width="100"></el-table-column>
+                    <el-table-column label="商品名称" prop="commodityName" min-width="150"></el-table-column>
+                    <el-table-column label="规格" prop="spec" width="100"></el-table-column>
+                    <el-table-column label="数量" prop="bomQty" min-width="100"></el-table-column>
+                    <el-table-column label="单位" prop="unitName" min-width="100"></el-table-column>
+                    <el-table-column label="状态" prop="statusDesc" min-width="150"></el-table-column>
+                    <el-table-column label="修改人" prop="updateBy" width="100"></el-table-column>
+                    <el-table-column label="修改时间" prop="updateTime" min-width="200"></el-table-column>
+                    <el-table-column label="操作" min-width="110" fixed="right">
+                        <template slot-scope="scope">
+                            <div @click="stopBubble">
+                                <a type="text" v-auth="PERMISSION.EDIT"
+                                   v-if="scope.row.status === 100"
+                                   href="javascript:;"
+                                   @click="operate(1, scope.row)">
+                                    编辑
+                                </a>
+                                <a type="text"
+                                   v-if="scope.row.status === 100"
+                                   v-auth="PERMISSION.OFF" href="javascript:;"
+                                   @click="operate(2, scope.row)">
+                                    启用
+                                </a>
+                                <a type="text" v-auth="PERMISSION.ON"
+                                   v-if="scope.row.status === 200"
+                                   href="javascript:;" @click="operate(3, scope.row)">
+                                    停用
+                                </a>
+                                <a type="text"
+                                   v-if="scope.row.status === 100"
+                                   v-auth="PERMISSION.DELETE"
+                                   href="javascript:;"
+                                   @click="operate(4, scope.row)">
+                                    删除
+                                </a>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
 
-                                                                                                                                                                                                                                                                                                                                                                                <el-row v-show="View.arrowUp">
-                                                                                                                                                                                                                                                                                                                                                                                                          <DateWidget label="要求发运时间" :labelWidth="100"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                          propFrom="sendTimeStart"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              propTo="sendTimeEnd"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  :timeFrom="View.queryParams.sendTimeStart"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  :timeTo="View.queryParams.sendTimeEnd"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  :keyArr="[1, 3, 0]"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @change="emitCallback2"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ></DateWidget>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                  <DateWidget label="生单时间" :labelWidth="100"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  propFrom="createTimeStart"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      propTo="createTimeEnd"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          :timeFrom="View.queryParams.createTimeStart"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          :timeTo="View.queryParams.createTimeEnd"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @change="emitCallback"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ></DateWidget>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      </el-row>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-row>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <el-col :span="24">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <el-button :loading="View.loading" @click="submitForm('waveSoList')" type="primary" size="small">查询</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-button @click="emptyFilterValue('waveSoList')" type="warning" size="small">清空</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-button v-auth="PERMISSION.GENERATE" :loading="View.loading" @click="switchOperate(1)" type="primary" size="small">生成波次</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el-button v-auth="PERMISSION.JOIN" :loading="View.loading" @click="switchOperate(2)" type="primary" size="small">加入波次</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <el-button v-auth="PERMISSION.BATCH_GENERATE" :loading="View.loading" @click="createWaveBatch()" type="primary" size="small">一键生成波次</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </el-col>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </el-row>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </el-form>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-table slot="table" :data="View.resultList" stripe border class="adjust-font"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ref="multipleTable"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @select="handleOneChange"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @select-all="handleAllChange">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el-table-column type="selection" width="55"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-table-column label="序号" type="index" width="60"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-table-column label="发运单号" prop="soNo" width="133"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <el-table-column label="类型" prop="soTypeDesc" min-width="113"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el-table-column label="状态" prop="soStatusDesc" min-width="75"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-table-column label="客户" prop="customerCode" min-width="120"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-table-column label="客户名称" prop="customerName" width="100"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <el-table-column label="波次号" width="100">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <template slot-scope="scope">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <span>{{scope.row.waveCode || '-'}}</span>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </template>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-table-column label="货主" prop="ownerCode" min-width="100"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-table-column label="要求发运时间" prop="sendTime" min-width="145"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <el-table-column label="线路" prop="routeCode" min-width="150"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el-table-column label="线路序号" prop="routeSequence" min-width="65"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <el-table-column la></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <el-table-column label="操作" min-width="60" fixed="right">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ible" class="wave-dialog">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <el-form :model="View.waveParams" ref="waveFilter">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el" type="primary" size="small">查询</el-button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <el-button :loading="View.loading" @click="waolumn>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <el-table-column prop="totalCount" label="触点数" min-width="80"></el-table-column>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <el-table-column prop="totalDetailCount" label=               </div>
-                                </el-dialog>
-                                            </main>
-                                                    </div>
-
-                                                        </section>
+                <div class="pager-right">
+                    <el-pagination
+                            @size-change="handleSizeChange"
+                            @current-change="handleCurrentChange"
+                            :current-page="View.currentPage || 1"
+                            :page-sizes="[50, 100]"
+                            :page-size="View.pageSize"
+                            layout="total, sizes, prev, pager, next, jumper"
+                            :total="View.totalCount">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+    </section>
 </template>
 
 <script>
-   sendTimeStart: '',
-                   sendTimeEnd: '',
-                                   createTimeStart: '',
-                                                   createTimeEnd: '',
-                                                                   waveCode: ''
-                                                                               };
+    import InputWidget from '@components/Widget/InputWidget';
+    import MultiSelectWidget from '@components/Widget/MultiSelectWidget';
+    import {
+        BomList,
+        BomOneList,
+        BomOff,
+        BomOn,
+        BomDel,
+    } from './service/service.js';
+
+    export default {
+        components: {
+            InputWidget,
+            MultiSelectWidget
+        },
+        data() {
             const View = {
-                              currentPage: 1,
-                                              pageSize: Number(localStorage.getItem('pageSize') || '50') || 50,
-                                                                   this.View.loading = false;
-                                                      this.View.waveCount = 0;
-                                                                              this.View.gridData = [];
+                currentPage: 1,
+                pageSize: Number(localStorage.getItem('pageSize') || '50') || 50,
+                totalCount: 0,
+                resultList: [], //查询结果
 
-                                                                                                      this.$alert(err.msg || '服务器错误!', '提示', {confirmButtonText: '确定', type: 'error'});
-                                                                                                                          });
+                queryParams: {
+                    bomCode: '',
+                    statusList: [],
+                    skuCode: '',
+                    commodityName: '',
+                },
+
+                expandRowKeysArr: [],
+
+                loading: false,
+            };
+
+            return {
+                View,
+                PERMISSION: {
+                    NEW: 'SR101',
+                    EDIT: 'SR102',
+                    DELETE: 'SR103',
+                    ON: 'SR104',
+                    OFF: 'SR105',
+                },
+                catData: {
+                    pageName: 'bom-list',
+                    msg: 'Failed',
+                },
+            }
+        },
+        mounted() {
+            this.query();
+        },
+        methods: {
+            operate(index, row) {
+                const id = row.id;
+                if (!id) {
+                    this.$alert('当前bom行无Id!', '提示', {confirmButtonText: '确定', type: 'info'});
+                    return;
+                }
+
+                switch (index) {
+                    case 1:
+                        this.jumpEdit(row.bomCode);
+                        break;
+                    case 2:
+                    case 3:
+                        this.onOff(index, id, row);
+                        break;
+                    case 4:
+                        this.bomDel(id);
+                        break;
+                    default:
+                        break;
+                }
             },
-                        /**
-                                       * 选择操作
-                                                    */
-                        switchOperate(n) {
-                                          const multipleSelection = thi
-                                                            }
+            bomDel(id) {
+                this.$confirm('确认删除？', '提示').then(() => {
+                    const catData = {...this.catData, msg: 'bomDel'};
+                    this.View.loading = true;
+                    BomDel(id, {}, catData)
+                        .then(() => {
+                            this.View.loading = false;
+                            this.$alert('操作成功!', '提示', {confirmButtonText: '确定', type: 'success'});
+                            this.query();
+                        })
+                        .catch(err => {
+                            this.View.loading = false;
+                            this.$alert(err.msg || '未知原因导致失败!', '提示', {confirmButtonText: '确定', type: 'info'});
+                        })
+                }).catch(() => {})
+            },
 
+            onOff(index, id) {
+                const opFunc = index === 2 ? BomOn : BomOff;
+                const catData = {...this.catData, msg: opFunc.name};
+                this.View.loading = true;
+                opFunc(id, {}, catData)
+                    .then(() => {
+                        this.View.loading = false;
+                        this.$alert('操作成功!', '提示', {confirmButtonText: '确定', type: 'success'});
+                        this.query();
+                    })
+                    .catch(err => {
+                        this.View.loading = false;
+                        this.$alert(err.msg || '未知原因导致失败!', '提示', {confirmButtonText: '确定', type: 'info'});
+                    })
+            },
+
+
+            bomOneList(row, bomId) {
+                const catData = {...this.catData, msg: 'BomOneList'};
+                this.View.loading = true;
+                BomOneList(bomId, {}, catData)
+                    .then((res = {}) => {
+                        this.View.loading = false;
+                        row.detailList = res || [];
+
+                        this.View.expandRowKeysArr.push(bomId);
+                    })
+                    .catch(err => {
+                        this.View.loading = false;
+                        row.detailList = [];
+                        this.View.expandRowKeysArr.push(bomId);
+                        this.$alert(err.msg || '服务器错误!', '提示', {confirmButtonText: '确定', type: 'info'});
+                    })
+            },
+            showMoreDetail(row) {
+                const bomId = row.id;
+                if (!bomId) {
+                    this.$alert('当前bom行无Id!', '提示', {confirmButtonText: '确定', type: 'info'});
+                    return;
+                }
+                const index = this.View.expandRowKeysArr.findIndex(item => item === bomId);
+                if (index >= 0) {
+                    this.View.expandRowKeysArr.splice(index, 1);
+                } else {
+                    this.bomOneList(row, bomId);
+                }
+            },
+
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        this.View.currentPage = 1;
+                        this.query();
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            query() {
                 const params = {
-                            ror'});
-                                                });
+                    ...this.View.queryParams,
+                    currentPage: this.View.currentPage,
+                    pageSize: this.View.pageSize,
+                };
+
+                const catData = {...this.catData, msg: 'BomList'};
+                this.View.loading = true;
+                BomList(params, catData)
+                    .then((res = {}) => {
+                        this.View.loading = false;
+                        this.View.totalCount = res.totalNum || 0;
+                        const bomHeaderList = res.bomHeaderList || [];
+                        bomHeaderList.forEach(item => {
+                            item.detailList = [];
+                        });
+                        this.View.resultList = bomHeaderList;
+
+                        this.View.expandRowKeysArr = [];
+                    })
+                    .catch((err = {}) => {
+                        this.View.loading = false;
+                        this.View.totalCount = 0;
+                        this.View.resultList = [];
+
+                        this.$alert(err.msg || '服务器错误!', '提示', {confirmButtonText: '确定', type: 'error'});
+                    });
             },
-                        /**
-                                       * 生成波次
-                                                    */
-                        createWave(soIds) {
-                                          if (this.View.loading) {
-                                                                return;
-                                                                                }
+            getRowKeys(row) {
+                return row.id;
+            },
+            jumpToDetailPage(bomCode) {
+                this.Open(`/app/sr/bom/view/${bomCode}`);
+            },
+            stopBubble(e) {
+                e.stopPropagation();
+            },
+            jumpEdit(bomCode) {
+                this.Open(`/app/sr/bom/edit/${bomCode}`);
+            },
 
-                                                          const catData = {
-                                                                                ...this.catData,
-                                                                                                    msg: 'CreateWave',
-                                                                                                                    };
-
-                                                                          this.View.loading = true;
-                                                                                          CreateWave(soIds, catData)
-                                                                                                                .then((res) => {
-                                                                                                                                          this.View.loading = false;
-                                                                                                                                                                  this.query();
-
-                                                                                                                                                                                          return res;
-                                                                                                                                                                                                              })
-                                                                                                              .then((waveCode) => {
-                                                                                                                                        this.jumpToWaveList(waveCode);
-                                                                                                                                                            })
-                                                                                                                                  .catch(err => {
-                                                                                                                                                            this.View.loading = false;
-                                                                                                                                                                                    this.$alert(err.msg || '服务器错误', '提示', {confirmButtonText: '确定', type: 'error'});
-                                                                                                                                                                                                        });
-                                                                                                                                              },
-                                                                                                                                                          /**
-                                                                                                                                                                         * 一键生成波次
-                                                                                                                                                                                      */
-                                                                                                                                                          createWaveBatch() {
-                                                                                                                                                                            if (this.View.loading) {
-                                                                                                                                                                                                  return;
-                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                            const catData = {
-                                                                                                                                                                                                                  ...this.catData,
-                                                                                                                                                                                                                                      msg: 'CreateWaveBatch',
-                                                                                                                                                                                                                                                      };
-
-                                                                                                                                                                                                            this.View.loading = true;
-                                                                                                                                                                                                                            CreateWaveBatch({}, catData)
-                                                                                                                                                                                                                                                  .then((res) => {
-                                                                                                                                                                                                                                                                            this.View.loading = false;
-                                                                                                                                                                                                                                                                                                    this.query();
-                                                                                                                                                                                                                                                                                                                            return res;
-                                                                                                                                                                                                                                                                                                                                                })
-                                                                                                                                                                                                                                                .then((count) => {
-                                                                                                                                                                                                                                                                          this.$confirm('成功生成了' + count + '个波次, 是否跳转至波次列表?', '提示', {
-                                                                                                                                                                                                                                                                                                        confirmButtonText: '确定',
-                                                                                                                                                                                                                                                                                                                                    cancelButtonText: '取消',
-                                                                                                                                                                                                                                                                                                                                                                type: 'success'
-                                                                                                                                                                                                                                                                                                                                                                                          }).then(() => {
-                                                                                                                                                                                                                                                                                                        // this.jumpToWaveList();
-                                                                                                                                                                                                                                                                                                        this.Open('/app/newoub/waveList/');
-                                                                                                                                                                                                                                                                                                                               }
-                                                                                                                                                                                                                                                                                                                                               });
-                                                                                                                                                                                                                                                                                      },
-                                                                                                                                                                                                                                                                                                  handleSizeChange(val) {
-                                                                                                                                                                                                                                                                                                                    this.View.pageSize = val;
-                                                                                                                                                                                                                                                                                                                                    localStorage.setItem('pageSize', val);
-                                                                                                                                                                                                                                                                                                                                                    this.View.currentPage = 1;
-                                                                                                                                                                                                                                                                                                                                                                    this.query();
-                                                                                                                                                                                                                                                                                                                                                                                },
-                                                                                                                                                                                                                                                                                                                                                                                            handleCurrentChange(page) {
-                                                                                                                                                                                                                                                                                                                                                                                                              this.View.currentPage = page;
-                                                                                                                                                                                                                                                                                                                                                                                                                              this.query();
-                                                                                                                                                                                                                                                                                                                                                                                                                                          },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      handleWaveSizeChange(val) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        this.View.currentWavePage = val;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        localStorage.setItem('pageSize', val);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        this.View.currentWavePage = 1;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        this.waveQuery();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                handleWaveCurrentChange(page) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  this.View.currentWavePage = page;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  this.waveQuery();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              },
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+            emptyFilterValue() {
+                Object.keys(this.View.queryParams).forEach(i => {
+                    this.View.queryParams[i] = i == 'statusList' ? [] : '';
+                });
+            },
+            handleSizeChange(val) {
+                this.View.pageSize = val;
+                localStorage.setItem('pageSize', val);
+                this.View.currentPage = 1;
+                this.query();
+            },
+            handleCurrentChange(page) {
+                this.View.currentPage = page;
+                this.query();
+            },
+        },
+    }
 </script>
 
-<style lang="less">
-.wave-dialog .el-dialog {
-      width: 70%;
-}
 
-                        .wave-dialog .el-dialog__body {
-                              padding: 10px 20px;
-                        }
-
-                        .el-dialog__wrapper.wave-dialog {
-                              height: 90vh;
-                        }
-</style>
 
